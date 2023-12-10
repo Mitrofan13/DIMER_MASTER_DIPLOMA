@@ -35,8 +35,6 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-//#define DIM_AMOUNT   8
-//#define BUFFER_SIZE  9
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -59,26 +57,7 @@ void SystemClock_Config(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-uint16_t      dimPins[DIM_AMOUNT]  = {DIM_CH1_Pin, DIM_CH2_Pin, DIM_CH3_Pin, DIM_CH4_Pin,
-								            DIM_CH5_Pin, DIM_CH6_Pin, DIM_CH7_Pin, DIM_CH8_Pin};
-GPIO_TypeDef* dimPorts[DIM_AMOUNT] = {DIM_CH1_GPIO_Port, DIM_CH2_GPIO_Port, DIM_CH3_GPIO_Port, DIM_CH4_GPIO_Port,
-	                                        DIM_CH5_GPIO_Port, DIM_CH6_GPIO_Port, DIM_CH7_GPIO_Port, DIM_CH8_GPIO_Port};
-
-uint8_t transmitBuffer[BUFFER_SIZE];
 uint8_t receiveBuffer[BUFFER_SIZE];
-
-
-//struct Dimmer {
-//    int mode;      // Режим дії (наприклад, 0 - автоматичний, 1 - ручний)
-//    int dim_val;    // Значення диммера (наприклад, інтенсивність світла)
-//};
-//
-struct Dimmer myDimmer[DIM_AMOUNT];
-//const TIM_TypeDef*  TIMs[DIM_AMOUNT]     = {TIM1,TIM2,TIM3,TIM4,TIM5,TIM8,TIM9,TIM11};
-
-//const TIM_HandleTypeDef* HandleTIMs[]    = {&htim1, &htim2, &htim3, &htim4, &htim5, &htim8, &htim9, &htim11};
-
-//extern uint16_t adc_value = 0;
 
 /* USER CODE END 0 */
 
@@ -115,6 +94,7 @@ int main(void)
   MX_TIM14_Init();
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_IT(&huart2, receiveBuffer, BUFFER_SIZE);
+  HAL_TIM_Base_Start_IT(&htim14);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -165,65 +145,6 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-
-//	for(uint8_t i = 0; i<DIM_AMOUNT; i++)
-//	{
-//		if(htim->Instance == TIMs[i])
-//		{
-////			if(i==0) HAL_TIM_Base_Stop_IT(&htim1);//  о�?танавливаем таймер
-////			if(i==1) HAL_TIM_Base_Stop_IT(&htim2);
-////			if(i==2) HAL_TIM_Base_Stop_IT(&htim3);
-////			if(i==3) HAL_TIM_Base_Stop_IT(&htim4);
-////			if(i==4) HAL_TIM_Base_Stop_IT(&htim5);
-////			if(i==5) HAL_TIM_Base_Stop_IT(&htim8);
-////			if(i==6) HAL_TIM_Base_Stop_IT(&htim9);
-////			if(i==7) HAL_TIM_Base_Stop_IT(&htim11);
-////
-////			HAL_GPIO_WritePin(dimPorts[i], dimPins[i], GPIO_PIN_SET);
-//	        HAL_TIM_Base_Stop_IT(HandleTIMs[i]);  // О�?танній параметр автоматично визначаєть�?�? за допомогою індек�?у
-//	        HAL_GPIO_WritePin(dimPorts[i], dimPins[i], GPIO_PIN_SET);
-//		}
-//	}
-
-	HAL_TIM_Base_Stop_IT(&htim14);
-	HAL_GPIO_WritePin(DIM_CH1_GPIO_Port, DIM_CH1_Pin, GPIO_PIN_SET);
-}
-
-
-
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
-{
-  if (huart->Instance == USART2)
-  {
-    // USART1 завершил прием данных
-	  HAL_UART_Receive_IT(&huart2, receiveBuffer, BUFFER_SIZE);
-
-	for(uint8_t i = 0; i<DIM_AMOUNT; i++)
-	{
-//		if(dim_par.mode_flag[i] == FIRING_ANGLE_MODE)
-//		{
-//			dim_par.dimmer[i] = adc_value.adc_value * X_COEFICIENT + B_COEFICIENT;   // dimmer[1000:10000] adc_value[0:255] -35.12412
-//		}
-//		if(dim_par.mode_flag[i] == ZERO_CROSS_MODE)
-//		{
-//			dim_par.dimmer[i] = adc_value.adc_value; //dimmer[0:255] adc_value[0:255]
-//		}
-
-		myDimmer[i].mode    = (receiveBuffer[8] & (0b00000001)<<i)>>i;
-		myDimmer[i].dim_val = receiveBuffer[i];
-	}
-  }
-}
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
-{
-  if (huart->Instance == USART2)
-  {
-    // USART2 завершил отправку данных
-  }
-}
-
 
 /* USER CODE END 4 */
 

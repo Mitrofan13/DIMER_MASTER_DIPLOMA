@@ -60,8 +60,8 @@ all: main-build
 main-build: AD_DIMER_DIPLOMA_F042K6.elf secondary-outputs
 
 # Tool invocations
-AD_DIMER_DIPLOMA_F042K6.elf AD_DIMER_DIPLOMA_F042K6.map: $(OBJS) $(USER_OBJS) E:\dima\STM32_PROG\MASTER_DIMER_DIPLOMA\AD_DIMER_DIPLOMA_F042K6\STM32F042K6TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "AD_DIMER_DIPLOMA_F042K6.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0 -T"E:\dima\STM32_PROG\MASTER_DIMER_DIPLOMA\AD_DIMER_DIPLOMA_F042K6\STM32F042K6TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="AD_DIMER_DIPLOMA_F042K6.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+AD_DIMER_DIPLOMA_F042K6.elf AD_DIMER_DIPLOMA_F042K6.map: $(OBJS) $(USER_OBJS) E:\dima\STM32_PROG\MASTER_DIMER_DIPLOMA\REPO\AD_DIMER_DIPLOMA_F042K6\STM32F042K6TX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "AD_DIMER_DIPLOMA_F042K6.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m0 -T"E:\dima\STM32_PROG\MASTER_DIMER_DIPLOMA\REPO\AD_DIMER_DIPLOMA_F042K6\STM32F042K6TX_FLASH.ld" --specs=nosys.specs -Wl,-Map="AD_DIMER_DIPLOMA_F042K6.map" -Wl,--gc-sections -static --specs=nano.specs -mfloat-abi=soft -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 

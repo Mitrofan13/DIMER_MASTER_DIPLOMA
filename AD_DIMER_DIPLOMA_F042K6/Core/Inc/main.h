@@ -86,23 +86,23 @@ void Error_Handler(void);
 #define MIN_DIM_VAL       0
 #define FIRING_ANGLE_MODE 0
 #define ZERO_CROS_MODE    1
-#define DEFAULT_MODE      0
 #define MAX_WALVES        64
 #define WALVES_COUFICIENT MAX_WALVES / 100
 #define DIM_AMOUNT        8
 
-
-
-
-struct Dimmer {
-    int mode;      // Режим дії (наприклад, 0 - автоматичний, 1 - ручний)
-    int dim_val;    // Значення диммера (наприклад, інтенсивність світла)
+struct Dimmer
+{
+    uint8_t mode;
+    uint8_t dim_val;
 };
 
 extern struct Dimmer myDimmer[DIM_AMOUNT];
 
 extern uint16_t      dimPins[DIM_AMOUNT];
 extern GPIO_TypeDef* dimPorts[DIM_AMOUNT];
+extern uint8_t       dim_tim_count[DIM_AMOUNT];
+extern uint8_t       dim_status_flag[DIM_AMOUNT];
+extern uint8_t       receiveBuffer[BUFFER_SIZE];
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

@@ -59,12 +59,22 @@
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-uint8_t dim_tim_count   = 0 ;
-uint8_t dim_val         = MIN_DIM_VAL;
-uint8_t mode            = DEFAULT_MODE;
+uint16_t      dimPins[DIM_AMOUNT]  = {DIM_CH1_Pin, DIM_CH2_Pin, DIM_CH3_Pin, DIM_CH4_Pin,
+								            DIM_CH5_Pin, DIM_CH6_Pin, DIM_CH7_Pin, DIM_CH8_Pin};
+GPIO_TypeDef* dimPorts[DIM_AMOUNT] = {DIM_CH1_GPIO_Port, DIM_CH2_GPIO_Port, DIM_CH3_GPIO_Port, DIM_CH4_GPIO_Port,
+	                                        DIM_CH5_GPIO_Port, DIM_CH6_GPIO_Port, DIM_CH7_GPIO_Port, DIM_CH8_GPIO_Port};
 
 uint8_t allowed_walves[DIM_AMOUNT];
 uint8_t walves_counter[DIM_AMOUNT];
+
+uint8_t dim_tim_count[DIM_AMOUNT];
+uint8_t dim_status_flag[DIM_AMOUNT];
+
+uint8_t transmitBuffer[BUFFER_SIZE];
+
+struct Dimmer myDimmer[DIM_AMOUNT];
+
+//uint8_t receiveBuffer[BUFFER_SIZE];
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -72,7 +82,7 @@ extern ADC_HandleTypeDef hadc;
 extern TIM_HandleTypeDef htim14;
 extern UART_HandleTypeDef huart2;
 /* USER CODE BEGIN EV */
-//extern struct Dimmer myDimmer[DIM_AMOUNT];
+
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -163,37 +173,29 @@ void EXTI4_15_IRQHandler(void)
   /* USER CODE BEGIN EXTI4_15_IRQn 0 */
 
 
-//--------------------FIRING_ANGLE---------------------------------------------
-
-
 	for(uint8_t i = 0; i < DIM_AMOUNT; i++)
 	{
+//--------------------FIRING_ANGLE---------------------------------------------
 		if(myDimmer[i].mode == FIRING_ANGLE_MODE)
 		{
 			if(myDimmer[i].dim_val == MAX_DIM_VAL)
 			{
+				dim_status_flag[i] = 1;
 				HAL_GPIO_WritePin(dimPorts[i], dimPins[i], GPIO_PIN_SET);
 			}
 			else if(myDimmer[i].dim_val == MIN_DIM_VAL)
 			{
+				dim_status_flag[i] = 1;
 				HAL_GPIO_WritePin(dimPorts[i], dimPins[i], GPIO_PIN_RESET);
 			}
 			else
 			{
-				HAL_GPIO_WritePin(dimPorts[i], dimPins[i], GPIO_PIN_RESET); //move to main.c
-				dim_tim_count = MAX_DIM_VAL - myDimmer[i].dim_val;
-				//ARR = TIM CLOCK / FREQUENCY ;ARR =  prescaler * count_period
-				TIM14->ARR = dim_tim_count;
-				if(i == 0)
-				{
-					HAL_TIM_Base_Start_IT(&htim14);
-				}
-
+				HAL_GPIO_WritePin(dimPorts[i], dimPins[i], GPIO_PIN_RESET);
+				dim_status_flag[i] = 0;
+				dim_tim_count[i] = 0;
 			}
 		}
-
-		//--------------------ZERO_CROS_MODE---------------------------------------------
-
+//--------------------ZERO_CROS------------------------------------------------
 		else if(myDimmer[i].mode == ZERO_CROS_MODE)
 		{
 			if(myDimmer[i].dim_val == MAX_DIM_VAL)
@@ -226,8 +228,6 @@ void EXTI4_15_IRQHandler(void)
 			}
 		}
 	}
-
-
 
   /* USER CODE END EXTI4_15_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(ZERO_Pin);
@@ -279,5 +279,50 @@ void USART2_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
+//---------------------------------------------------------
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+//---------------------------------------------------------
+{
+	for(uint8_t i = 0; i < DIM_AMOUNT; i++)
+	{
+		if(dim_status_flag[i] == 0)
+		{
+			dim_tim_count[i]++;
+		}
+        if(HAL_GPIO_ReadPin(dimPorts[i], dimPins[i]) == 0)
+        {
+            if(dim_tim_count[i] == (100 - myDimmer[i].dim_val))
+            {
+            	HAL_GPIO_WritePin(dimPorts[i], dimPins[i], GPIO_PIN_SET);
+            	dim_status_flag[i] = 1;
+            }
+        }
 
+	}
+}
+//---------------------------------------------------------
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+//---------------------------------------------------------
+{
+	if (huart->Instance == USART2)
+	{
+		// USART2 finished receive data
+		HAL_UART_Receive_IT(&huart2, receiveBuffer, BUFFER_SIZE);
+
+		for(uint8_t i = 0; i<DIM_AMOUNT; i++)
+		{
+			myDimmer[i].mode    = (receiveBuffer[8] & (0b00000001)<<i)>>i;
+			myDimmer[i].dim_val = receiveBuffer[i];
+		}
+	}
+}
+//---------------------------------------------------------
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+//---------------------------------------------------------
+{
+	if (huart->Instance == USART2)
+	{
+		// USART2 finished transmit data
+	}
+}
 /* USER CODE END 1 */
