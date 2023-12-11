@@ -67,6 +67,7 @@ struct Dimmer myDimmer[DIM_AMOUNT];
 /* External variables --------------------------------------------------------*/
 extern ADC_HandleTypeDef hadc;
 extern TIM_HandleTypeDef htim14;
+extern TIM_HandleTypeDef htim16;
 extern UART_HandleTypeDef huart2;
 /* USER CODE BEGIN EV */
 
@@ -252,6 +253,20 @@ void TIM14_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles TIM16 global interrupt.
+  */
+void TIM16_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM16_IRQn 0 */
+
+  /* USER CODE END TIM16_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim16);
+  /* USER CODE BEGIN TIM16_IRQn 1 */
+
+  /* USER CODE END TIM16_IRQn 1 */
+}
+
+/**
   * @brief This function handles USART2 global interrupt.
   */
 void USART2_IRQHandler(void)
@@ -270,36 +285,43 @@ void USART2_IRQHandler(void)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 //---------------------------------------------------------
 {
-	for(uint8_t i = 0; i < DIM_AMOUNT; i++)
+	if(htim->Instance == TIM14)
 	{
-		if(myDimmer[i].curr_measur_status == ON)
+		for(uint8_t i = 0; i < DIM_AMOUNT; i++)
 		{
-			HAL_ADC_Start(&hadc);
-			HAL_ADC_PollForConversion(&hadc, 100);
-			adc_value = HAL_ADC_GetValue(&hadc);
-			HAL_ADC_Stop(&hadc);
-			transmitBuffer[0] = adc_value;
-			HAL_UART_Transmit_IT(&huart2, transmitBuffer, BUFFER_SIZE);
-		}
-		else
-		{
-			if((myDimmer[i].mode == FIRING_ANGLE_MODE) &&
-			   (myDimmer[i].dim_val != MIN_DIM_VAL))
+			if(myDimmer[i].curr_measur_status == ON)
 			{
-				if(myDimmer[i].triac_status_flag == OFF)
+				HAL_ADC_Start(&hadc);
+				HAL_ADC_PollForConversion(&hadc, 100);
+				adc_value = HAL_ADC_GetValue(&hadc);
+				HAL_ADC_Stop(&hadc);
+				transmitBuffer[0] = adc_value;
+				HAL_UART_Transmit_IT(&huart2, transmitBuffer, BUFFER_SIZE);
+			}
+			else
+			{
+				if((myDimmer[i].mode == FIRING_ANGLE_MODE) &&
+				   (myDimmer[i].dim_val != MIN_DIM_VAL))
 				{
-					myDimmer[i].dim_tim_count++;
-				}
-				if(HAL_GPIO_ReadPin(dimPorts[i], dimPins[i]) == OFF)
-				{
-					if(myDimmer[i].dim_tim_count == (MAX_DIM_VAL - myDimmer[i].dim_val))
+					if(myDimmer[i].triac_status_flag == OFF)
 					{
-						HAL_GPIO_WritePin(dimPorts[i], dimPins[i], GPIO_PIN_SET);
-						myDimmer[i].triac_status_flag = ON;
+						myDimmer[i].dim_tim_count++;
+					}
+					if(HAL_GPIO_ReadPin(dimPorts[i], dimPins[i]) == OFF)
+					{
+						if(myDimmer[i].dim_tim_count == (MAX_DIM_VAL - myDimmer[i].dim_val))
+						{
+							HAL_GPIO_WritePin(dimPorts[i], dimPins[i], GPIO_PIN_SET);
+							myDimmer[i].triac_status_flag = ON;
+						}
 					}
 				}
 			}
 		}
+	}
+	if(htim->Instance == TIM16)
+	{
+		HAL_GPIO_TogglePin(ST_LED_GPIO_Port, ST_LED_Pin);
 	}
 }
 //---------------------------------------------------------

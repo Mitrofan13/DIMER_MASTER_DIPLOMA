@@ -92,9 +92,11 @@ int main(void)
   MX_ADC_Init();
   MX_USART2_UART_Init();
   MX_TIM14_Init();
+  MX_TIM16_Init();
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_IT(&huart2, receiveBuffer, BUFFER_SIZE);
   HAL_TIM_Base_Start_IT(&htim14);
+  HAL_TIM_Base_Start_IT(&htim16);
   /* USER CODE END 2 */
 
   /* Infinite loop */
