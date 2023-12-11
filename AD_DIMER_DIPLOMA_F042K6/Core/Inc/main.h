@@ -81,7 +81,7 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN Private defines */
 
-#define BUFFER_SIZE       9
+#define BUFFER_SIZE       10
 #define MAX_DIM_VAL       100
 #define MIN_DIM_VAL       0
 #define FIRING_ANGLE_MODE 0
@@ -89,11 +89,19 @@ void Error_Handler(void);
 #define MAX_WALVES        64
 #define WALVES_COUFICIENT MAX_WALVES / 100
 #define DIM_AMOUNT        8
-
+#define OFF               0
+#define ON                1
+#define MODE_BYTE         8
+#define CURR_BYTE         9
 struct Dimmer
 {
     uint8_t mode;
     uint8_t dim_val;
+    uint8_t allowed_walves;
+	uint8_t walves_counter;
+	uint8_t dim_tim_count;
+	uint8_t triac_status_flag;
+	uint8_t curr_measur_status;
 };
 
 extern struct Dimmer myDimmer[DIM_AMOUNT];
@@ -101,7 +109,7 @@ extern struct Dimmer myDimmer[DIM_AMOUNT];
 extern uint16_t      dimPins[DIM_AMOUNT];
 extern GPIO_TypeDef* dimPorts[DIM_AMOUNT];
 extern uint8_t       dim_tim_count[DIM_AMOUNT];
-extern uint8_t       dim_status_flag[DIM_AMOUNT];
+extern uint8_t       triac_status_flag[DIM_AMOUNT];
 extern uint8_t       receiveBuffer[BUFFER_SIZE];
 /* USER CODE END Private defines */
 

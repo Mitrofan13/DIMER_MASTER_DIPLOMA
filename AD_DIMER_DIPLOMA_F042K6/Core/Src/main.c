@@ -58,7 +58,7 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN 0 */
 
 uint8_t receiveBuffer[BUFFER_SIZE];
-
+//uint16_t adc_value = 0;
 /* USER CODE END 0 */
 
 /**

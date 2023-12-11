@@ -31,14 +31,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-//#define MAX_DIM_VAL       100
-//#define MIN_DIM_VAL       0
-//#define FIRING_ANGLE_MODE 1
-//#define ZERO_CROS_MODE    2
-//#define DEFAULT_MODE      1
-//#define MAX_WALVES        64
-//#define WALVES_COUFICIENT MAX_WALVES / 100
-//#define DIM_AMOUNT        8
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -60,17 +53,11 @@
 /* USER CODE BEGIN 0 */
 
 uint16_t      dimPins[DIM_AMOUNT]  = {DIM_CH1_Pin, DIM_CH2_Pin, DIM_CH3_Pin, DIM_CH4_Pin,
-								            DIM_CH5_Pin, DIM_CH6_Pin, DIM_CH7_Pin, DIM_CH8_Pin};
+								      DIM_CH5_Pin, DIM_CH6_Pin, DIM_CH7_Pin, DIM_CH8_Pin};
 GPIO_TypeDef* dimPorts[DIM_AMOUNT] = {DIM_CH1_GPIO_Port, DIM_CH2_GPIO_Port, DIM_CH3_GPIO_Port, DIM_CH4_GPIO_Port,
-	                                        DIM_CH5_GPIO_Port, DIM_CH6_GPIO_Port, DIM_CH7_GPIO_Port, DIM_CH8_GPIO_Port};
-
-uint8_t allowed_walves[DIM_AMOUNT];
-uint8_t walves_counter[DIM_AMOUNT];
-
-uint8_t dim_tim_count[DIM_AMOUNT];
-uint8_t dim_status_flag[DIM_AMOUNT];
-
-uint8_t transmitBuffer[BUFFER_SIZE];
+	                                  DIM_CH5_GPIO_Port, DIM_CH6_GPIO_Port, DIM_CH7_GPIO_Port, DIM_CH8_GPIO_Port};
+uint16_t transmitBuffer[BUFFER_SIZE];
+uint16_t adc_value = 0;
 
 struct Dimmer myDimmer[DIM_AMOUNT];
 
@@ -180,19 +167,19 @@ void EXTI4_15_IRQHandler(void)
 		{
 			if(myDimmer[i].dim_val == MAX_DIM_VAL)
 			{
-				dim_status_flag[i] = 1;
+				myDimmer[i].triac_status_flag = ON;
 				HAL_GPIO_WritePin(dimPorts[i], dimPins[i], GPIO_PIN_SET);
 			}
 			else if(myDimmer[i].dim_val == MIN_DIM_VAL)
 			{
-				dim_status_flag[i] = 1;
+				myDimmer[i].triac_status_flag = OFF;
 				HAL_GPIO_WritePin(dimPorts[i], dimPins[i], GPIO_PIN_RESET);
 			}
 			else
 			{
 				HAL_GPIO_WritePin(dimPorts[i], dimPins[i], GPIO_PIN_RESET);
-				dim_status_flag[i] = 0;
-				dim_tim_count[i] = 0;
+				myDimmer[i].triac_status_flag = OFF;
+				myDimmer[i].dim_tim_count    = 0;
 			}
 		}
 //--------------------ZERO_CROS------------------------------------------------
@@ -201,18 +188,18 @@ void EXTI4_15_IRQHandler(void)
 			if(myDimmer[i].dim_val == MAX_DIM_VAL)
 			{
 				HAL_GPIO_WritePin(dimPorts[i], dimPins[i], GPIO_PIN_SET);
-				walves_counter[i] = 0;
+				myDimmer[i].walves_counter = 0;
 			}
 			else if(myDimmer[i].dim_val == MIN_DIM_VAL)
 			{
 				HAL_GPIO_WritePin(dimPorts[i], dimPins[i], GPIO_PIN_RESET);
-				walves_counter[i] = 0;
+				myDimmer[i].walves_counter = 0;
 			}
 			else
 			{
-				allowed_walves[i] = myDimmer[i].dim_val * WALVES_COUFICIENT;
+				myDimmer[i].allowed_walves = myDimmer[i].dim_val * WALVES_COUFICIENT;
 
-				if(walves_counter[i] < allowed_walves[i])
+				if(myDimmer[i].walves_counter < myDimmer[i].allowed_walves)
 				{
 					HAL_GPIO_WritePin(dimPorts[i], dimPins[i], GPIO_PIN_SET);
 				}
@@ -220,10 +207,10 @@ void EXTI4_15_IRQHandler(void)
 				{
 					HAL_GPIO_WritePin(dimPorts[i], dimPins[i], GPIO_PIN_RESET);
 				}
-				walves_counter[i]++;
-				if(walves_counter[i] == MAX_WALVES)
+				myDimmer[i].walves_counter++;
+				if(myDimmer[i].walves_counter == MAX_WALVES)
 				{
-					walves_counter[i] = 0;
+					myDimmer[i].walves_counter = 0;
 				}
 			}
 		}
@@ -285,19 +272,34 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	for(uint8_t i = 0; i < DIM_AMOUNT; i++)
 	{
-		if(dim_status_flag[i] == 0)
+		if(myDimmer[i].curr_measur_status == ON)
 		{
-			dim_tim_count[i]++;
+			HAL_ADC_Start(&hadc);
+			HAL_ADC_PollForConversion(&hadc, 100);
+			adc_value = HAL_ADC_GetValue(&hadc);
+			HAL_ADC_Stop(&hadc);
+			transmitBuffer[0] = adc_value;
+			HAL_UART_Transmit_IT(&huart2, transmitBuffer, BUFFER_SIZE);
 		}
-        if(HAL_GPIO_ReadPin(dimPorts[i], dimPins[i]) == 0)
-        {
-            if(dim_tim_count[i] == (100 - myDimmer[i].dim_val))
-            {
-            	HAL_GPIO_WritePin(dimPorts[i], dimPins[i], GPIO_PIN_SET);
-            	dim_status_flag[i] = 1;
-            }
-        }
-
+		else
+		{
+			if((myDimmer[i].mode == FIRING_ANGLE_MODE) &&
+			   (myDimmer[i].dim_val != MIN_DIM_VAL))
+			{
+				if(myDimmer[i].triac_status_flag == OFF)
+				{
+					myDimmer[i].dim_tim_count++;
+				}
+				if(HAL_GPIO_ReadPin(dimPorts[i], dimPins[i]) == OFF)
+				{
+					if(myDimmer[i].dim_tim_count == (MAX_DIM_VAL - myDimmer[i].dim_val))
+					{
+						HAL_GPIO_WritePin(dimPorts[i], dimPins[i], GPIO_PIN_SET);
+						myDimmer[i].triac_status_flag = ON;
+					}
+				}
+			}
+		}
 	}
 }
 //---------------------------------------------------------
@@ -311,8 +313,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
 		for(uint8_t i = 0; i<DIM_AMOUNT; i++)
 		{
-			myDimmer[i].mode    = (receiveBuffer[8] & (0b00000001)<<i)>>i;
-			myDimmer[i].dim_val = receiveBuffer[i];
+			myDimmer[i].curr_measur_status    = (receiveBuffer[CURR_BYTE] & (0b00000001) << i) >> i;
+			myDimmer[i].mode                  = (receiveBuffer[MODE_BYTE] & (0b00000001) << i) >> i;
+			myDimmer[i].dim_val               =  receiveBuffer[i];
 		}
 	}
 }
