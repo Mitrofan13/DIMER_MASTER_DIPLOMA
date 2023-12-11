@@ -75,16 +75,12 @@ void Error_Handler(void);
 #define DIM_CH1_GPIO_Port GPIOA
 #define ST_LED_Pin GPIO_PIN_3
 #define ST_LED_GPIO_Port GPIOB
-#define ZERO_Pin GPIO_PIN_4
-#define ZERO_GPIO_Port GPIOB
-#define ZERO_EXTI_IRQn EXTI4_15_IRQn
 
 /* USER CODE BEGIN Private defines */
 
 #define BUFFER_SIZE       10
 #define MAX_DIM_VAL       100
 #define MIN_DIM_VAL       0
-#define FIRING_ANGLE_MODE 0
 #define ZERO_CROS_MODE    1
 #define MAX_WALVES        64
 #define WALVES_COUFICIENT MAX_WALVES / 100
@@ -99,8 +95,7 @@ struct Dimmer
     uint8_t dim_val;
     uint8_t allowed_walves;
 	uint8_t walves_counter;
-	uint8_t dim_tim_count;
-	uint8_t triac_status_flag;
+
 	uint8_t curr_measur_status;
 };
 
