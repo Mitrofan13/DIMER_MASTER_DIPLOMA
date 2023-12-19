@@ -331,7 +331,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	if (huart->Instance == USART2)
 	{
 		// USART2 finished receive data
-		HAL_UART_Receive_IT(&huart2, receiveBuffer, BUFFER_SIZE);
+  		HAL_UART_Receive_IT(&huart2, receiveBuffer, BUFFER_SIZE);
 
 		for(uint8_t i = 0; i<DIM_AMOUNT; i++)
 		{
